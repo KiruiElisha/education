@@ -15,6 +15,8 @@ import {
   resourcesPlugin,
 } from 'frappe-ui'
 
+import { VFrappeChart } from 'vue-frappe-chart'
+
 // create a pinia instance
 let pinia = createPinia()
 
@@ -29,7 +31,10 @@ app.use(resourcesPlugin)
 app.component('Button', Button)
 app.component('Card', Card)
 app.component('Input', Input)
+app.component('VFrappeChart', VFrappeChart)
 
 router.isReady().then(() => {
   app.mount('#app')
 })
+
+

@@ -759,3 +759,142 @@ def get_student_attendance(student, student_group):
 		filters={"student": student, "student_group": student_group, "docstatus": 1},
 		fields=["date", "status", "name"],
 	)
+
+def _get_behavioral_flags(student_email):
+        """Get behavioral flags counts using SQL"""
+        flags = frappe.db.sql("""
+                SELECT
+                        COUNT(CASE WHEN late = 1 THEN 1 END) as late,
+                        COUNT(CASE WHEN breaking_rules = 1 THEN 1 END) as breaking_rules,
+                        COUNT(CASE WHEN fight = 1 THEN 1 END) as fight,
+                        COUNT(CASE WHEN sick = 1 THEN 1 END) as sick,
+                        COUNT(CASE WHEN incomplete_school_items = 1 THEN 1 END) as incomplete_school_items,
+                        COUNT(CASE WHEN homework_not_done = 1 THEN 1 END) as homework_not_done,
+                        COUNT(*) as total_evaluations
+                FROM `tabStudent Evaluation`
+                WHERE students = %s
+        """, student_email, as_dict=1)
+
+        result = flags[0] if flags else {}
+
+        # Convert None values to 0
+        for key in result:
+                if result[key] is None:
+                        result[key] = 0
+
+        frappe.logger().debug(f"Behavioral flags result: {result}")
+        return result
+
+
+@frappe.whitelist()
+def get_student_evaluation(student_email):
+        """Fetches and formats student evaluation data for charts"""
+        try:
+                # Get evaluations for the student
+                evaluations = frappe.db.sql("""
+                        SELECT
+                                name, student_group, review_date,
+                                homework, participation, tests, proficiency,
+                                attendance, discipline, communicationpeer_relationships,
+                                hygiene, extracurricular, sports,
+                                maths, science, speaking_and_communication_skills,
+                                grammar_and_vocabulary, writing, reading,
+                                achievements,
+                                late, breaking_rules, fight, sick,
+                                incomplete_school_items, homework_not_done
+                        FROM `tabStudent Evaluation`
+                        WHERE students = %s
+                        ORDER BY review_date DESC
+                """, student_email, as_dict=1)
+
+                if not evaluations:
+                        return _get_empty_response()
+
+                # Get behavioral flags
+                behavioral_flags = _get_behavioral_flags(student_email)
+                frappe.logger().debug(f"Behavioral flags before adding to result: {behavioral_flags}")
+
+                # Calculate core metrics averages (excluding zero values)
+                core_metrics = {
+                        'homework': _calculate_metric_average([e.homework for e in evaluations]),
+                        'participation': _calculate_metric_average([e.participation for e in evaluations]),
+                        'tests': _calculate_metric_average([e.tests for e in evaluations]),
+                        'proficiency': _calculate_metric_average([e.proficiency for e in evaluations])
+                }
+
+                # Prepare chart data
+                labels = ["Homework", "Class Participation", "Test Scores", "Subject Proficiency"]
+                values = [core_metrics[m] for m in ['homework', 'participation', 'tests', 'proficiency']]
+
+                # Calculate overall average
+                valid_values = [v for v in values if v is not None and v > 0]
+                overall_average = sum(valid_values) / len(valid_values) if valid_values else 0
+
+                # Get latest evaluation for metadata
+                latest = evaluations[0] if evaluations else None
+
+                result = {
+                        "labels": labels,
+                        "values": values,
+                        "evaluations": evaluations,
+                        "average": overall_average,
+                        "metadata": {
+                                "student_group": latest.get("student_group") if latest else "",
+                                "total_evaluations": behavioral_flags.get('total_evaluations', 0)
+                        },
+                        "flags": behavioral_flags,
+                        "analysis": {
+                                "academic": {
+                                        "maths": _calculate_metric_average([e.maths for e in evaluations]),
+                                        "science": _calculate_metric_average([e.science for e in evaluations]),
+                                        "writing": _calculate_metric_average([e.writing for e in evaluations]),
+                                        "reading": _calculate_metric_average([e.reading for e in evaluations])
+                                },
+                                "communication": {
+                                        "speaking": _calculate_metric_average([e.speaking_and_communication_skills for e in evaluations]),
+                                        "grammar": _calculate_metric_average([e.grammar_and_vocabulary for e in evaluations]),
+                                        "peer_relations": _calculate_metric_average([e.communicationpeer_relationships for e in evaluations])
+                                },
+                                "behavioral": {
+                                        "attendance": _calculate_metric_average([e.attendance for e in evaluations]),
+                                        "discipline": _calculate_metric_average([e.discipline for e in evaluations]),
+                                        "hygiene": _calculate_metric_average([e.hygiene for e in evaluations]),
+                                        "extracurricular": _calculate_metric_average([e.extracurricular for e in evaluations]),
+                                        "sports": _calculate_metric_average([e.sports for e in evaluations])
+                                }
+                        }
+                }
+
+                frappe.logger().debug(f"Final result with flags: {result}")
+                return result
+
+        except Exception as e:
+                frappe.log_error(f"Student Evaluation Error: {str(e)}")
+                return _get_empty_response(error=str(e))
+
+def _calculate_metric_average(values):
+        """Helper function to calculate average excluding None and zero values"""
+        valid_values = [float(v) for v in values if v is not None and v != 0]
+        return sum(valid_values) / len(valid_values) if valid_values else 0
+
+def _get_empty_response(error=None):
+        """Helper function to return empty evaluation response"""
+        response = {
+                "labels": [],
+                "values": [],
+                "evaluations": [],
+                "average": 0,
+                "metadata": {
+                        "student_group": "",
+                        "total_evaluations": 0
+                },
+                "analysis": {
+                        "academic": {},
+                        "communication": {},
+                        "behavioral": {},
+                        "flags": {}
+                }
+        }
+        if error:
+                response["error"] = error
+        return response
