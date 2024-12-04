@@ -26,9 +26,9 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-100">
             <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <!-- <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Term
-              </th>
+              </th> -->
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Assessment Criteria
               </th>
@@ -44,7 +44,7 @@
             <tr v-for="detail in courseData" 
                 :key="detail.id" 
                 class="hover:bg-gray-50">
-              <td class="px-6 py-4 text-sm text-gray-900">{{ detail.academic_term }}</td>
+              <!-- <td class="px-6 py-4 text-sm text-gray-900">{{ detail.academic_term }}</td> -->
               <td class="px-6 py-4 text-sm text-gray-900">{{ detail.assessment_criteria }}</td>
               <td class="px-6 py-4 text-sm text-gray-900">
                 {{ detail.score }}/{{ detail.maximum_score }}

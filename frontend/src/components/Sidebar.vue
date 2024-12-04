@@ -52,17 +52,13 @@ import {
   ArrowLeftToLine,
   BookOpen,
   BarChart2,
+  Star,
 } from 'lucide-vue-next'
 
 import UserDropdown from './UserDropdown.vue'
 import { createResource } from 'frappe-ui'
 
 const links = [
-  // {
-  //  label: 'Dashboard',
-  //  to: '/',
-  //  icon: LayoutDashboard,
-  // },
   {
     label: 'Schedule',
     to: '/schedule',
@@ -83,27 +79,20 @@ const links = [
     to: '/attendance',
     icon: UserCheck,
   },
-  // {
-  //  // TODO: create School Diary Page with card like CRM and from ListView go to Resource Document of each Card
-  //  label: 'Notes',
-  //  to: '/notes',
-  //  icon: BookOpen,
-  // },
-  // {
-  //  label: 'Profile',
-  //  to: '/profile',
-  //  icon: User,
-  // },
   {
-    label: 'Evaluation',
+    label: 'Student Evaluation',
     to: '/evaluation',
     icon: BarChart2,
+  },
+  {
+    label: 'Teacher Evaluation',
+    to: '/teacher-evaluation',
+    icon: Star,
   },
 ]
 
 const isSidebarCollapsed = useStorage('sidebar_is_collapsed', false)
 
-// create a resource which call the function get_school_abbr_logo in api file using createResource
 const educationSettings = createResource({
   url: 'education.education.api.get_school_abbr_logo',
   auto: true,

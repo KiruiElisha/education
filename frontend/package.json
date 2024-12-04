@@ -23,7 +23,9 @@
     "vite": "^2.7.2",
     "vue": "^3.2.25",
     "vue-frappe-chart": "^0.1.10",
-    "vue-router": "^4.0.12"
+    "vue-router": "^4.0.12",
+    "vue-star-rating": "^2.1.0",
+    "vue-toastification": "^1.7.14"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.0.0",

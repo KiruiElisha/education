@@ -923,4 +923,67 @@ def get_assessment_results(student, program):
         frappe.log_error(f"Error fetching assessment results for student {student} in program {program}: {str(e)}")
         return {"error": str(e)}
 
+@frappe.whitelist()
+def get_student_group_details():
+    # Get the current user's email
+    student_email = frappe.session.user
+
+    # Fetch the student record associated with the current user
+    student_info = frappe.db.get_value("Student", {"user": student_email}, ["name"], as_dict=True)
+    
+    if not student_info:
+        frappe.throw(_("Student not found"))
+
+    # Find the student group that includes this student
+    student_group_name = frappe.db.get_value("Student Group Student", {"student": student_info.name}, "parent")
+    
+    if not student_group_name:
+        frappe.throw(_("Student group not found"))
+
+    # Fetch the student group document
+    student_group = frappe.get_doc("Student Group", student_group_name)
+    
+    # Extract instructor details
+    instructors = [{"name": inst.name, "instructor_name": inst.instructor_name} for inst in student_group.instructors]
+
+    return {
+        "student_group_name": student_group.student_group_name,
+        "instructors": instructors
+    }
+
+@frappe.whitelist(allow_guest=True)
+def submit_teacher_evaluation(data=None):
+    try:
+        if not data:
+            frappe.throw(_("No data received"))
+
+        # Parse the incoming data
+        evaluation_data = frappe.parse_json(data)
+
+        # Create a new Teacher Evaluation document
+        evaluation = frappe.get_doc({
+            "doctype": "Teacher Evaluation",
+            "student_group": evaluation_data.get("student_group"),
+            "instructors": evaluation_data.get("instructors"),
+            "review_date": evaluation_data.get("review_date"),
+            "respect": evaluation_data.get("respect"),
+            "exams": evaluation_data.get("exams"),
+            "communication_skill": evaluation_data.get("communication_skill"),
+            "followup": evaluation_data.get("followup"),
+            "homework": evaluation_data.get("homework"),
+            "knowledge": evaluation_data.get("knowledge"),
+			"feedback": evaluation_data.get("feedback"),
+			"reviewer": evaluation_data.get("reviewer")
+        })
+
+        # Save the document
+        evaluation.insert()
+        frappe.db.commit()
+
+        return {"message": _("Evaluation submitted successfully.")}
+
+    except Exception as e:
+        frappe.log_error(f"Error submitting evaluation: {str(e)}")
+        frappe.throw(_("There was an error submitting the evaluation."))
+
 
