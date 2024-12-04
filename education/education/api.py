@@ -898,3 +898,29 @@ def _get_empty_response(error=None):
         if error:
                 response["error"] = error
         return response
+
+@frappe.whitelist()
+def get_assessment_results(student, program):
+    """Fetches assessment results for a given student and program."""
+    try:
+        results = frappe.db.sql("""
+            SELECT 
+                ar.name, ar.total_score, ar.maximum_score, ar.grade,
+                ard.assessment_criteria, ard.score, ard.maximum_score AS detail_maximum_score, ard.grade AS detail_grade,
+                ar.course, ar.academic_term
+            FROM 
+                `tabAssessment Result` ar
+            JOIN 
+                `tabAssessment Result Detail` ard ON ard.parent = ar.name
+            WHERE 
+                ar.student = %s AND ar.program = %s
+        """, (student, program), as_dict=True)
+
+        frappe.logger().info(f"Fetched assessment results for student {student} in program {program}: {results}")
+        return results
+
+    except Exception as e:
+        frappe.log_error(f"Error fetching assessment results for student {student} in program {program}: {str(e)}")
+        return {"error": str(e)}
+
+
