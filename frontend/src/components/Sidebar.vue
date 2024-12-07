@@ -1,12 +1,12 @@
 <template>
   <div
     class="flex h-full flex-col justify-between transition-all duration-300 ease-in-out"
-    :class="isSidebarCollapsed ? 'w-12' : 'w-56'"
+    :class="sidebarState ? 'w-12' : 'w-56'"
   >
     <div class="flex flex-col overflow-hidden">
       <UserDropdown
         class="p-2"
-        :isCollapsed="isSidebarCollapsed"
+        :isCollapsed="sidebarState"
         :educationSettings="
           !educationSettings.loading && educationSettings.data
         "
@@ -16,31 +16,31 @@
           :label="link.label"
           :to="link.to"
           v-for="link in links"
-          :isCollapsed="isSidebarCollapsed"
+          :isCollapsed="sidebarState"
           :icon="link.icon"
           class="mx-2 my-0.5"
         />
       </div>
     </div>
-    <SidebarLink
-      :label="isSidebarCollapsed ? 'Expand' : 'Collapse'"
-      :isCollapsed="isSidebarCollapsed"
-      @click="isSidebarCollapsed = !isSidebarCollapsed"
-      class="m-2"
+    <button 
+      @click="toggleSidebar"
+      class="m-2 flex items-center p-2 rounded hover:bg-gray-100"
     >
-      <template #icon>
-        <span class="grid h-5 w-6 flex-shrink-0 place-items-center">
-          <ArrowLeftToLine
-            class="h-4.5 w-4.5 text-gray-700 duration-300 ease-in-out"
-            :class="{ '[transform:rotateY(180deg)]': isSidebarCollapsed }"
-          />
-        </span>
-      </template>
-    </SidebarLink>
+      <span class="grid h-5 w-6 flex-shrink-0 place-items-center">
+        <ArrowLeftToLine
+          class="h-4.5 w-4.5 text-gray-700 transition-transform duration-300 ease-in-out"
+          :class="{ 'rotate-180': sidebarState }"
+        />
+      </span>
+      <span v-if="!sidebarState" class="ml-2">
+        {{ sidebarState ? 'Expand' : 'Collapse' }}
+      </span>
+    </button>
   </div>
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import SidebarLink from '@/components/SidebarLink.vue'
 import {
@@ -91,7 +91,19 @@ const links = [
   },
 ]
 
+// Create a reactive ref for immediate UI updates
+const sidebarState = ref(false)
 const isSidebarCollapsed = useStorage('sidebar_is_collapsed', false)
+
+// Sync the storage value with our reactive ref
+watch(isSidebarCollapsed, (newValue) => {
+  sidebarState.value = newValue
+}, { immediate: true })
+
+const toggleSidebar = () => {
+  sidebarState.value = !sidebarState.value
+  isSidebarCollapsed.value = sidebarState.value
+}
 
 const educationSettings = createResource({
   url: 'education.education.api.get_school_abbr_logo',

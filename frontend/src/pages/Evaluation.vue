@@ -54,56 +54,116 @@
                 Performance Metrics
               </h3>
               <div class="relative">
-                <v-frappe-chart
-                  v-if="hasData"
-                  type="bar"
-                  :labels="evaluation.data?.labels"
-                  :data="[{
-                    name: 'Performance',
-                    values: evaluation.data?.values,
-                    chartType: 'bar'
-                  }]"
-                  :colors="['#4F46E5', '#EC4899', '#06B6D4', '#F59E0B']"
-                  :tooltipOptions="{
-                    formatTooltipX: d => d,
-                    formatTooltipY: d => `${(d * 100).toFixed(1)}%`,
-                    valuesOverPoints: true
-                  }"
-                  :axisOptions="{
-                    xAxisMode: 'tick',
-                    yAxisMode: 'tick',
-                    xIsSeries: true,
-                    yMarkers: [{ 
-                      label: 'Target',
-                      value: 0.75,
-                      type: 'solid',
-                      options: { labelPos: 'right' }
-                    }],
-                    yAxis: {
-                      min: 0,
-                      max: 1,
-                      stepSize: 0.2,
-                      labels: ['0%', '20%', '40%', '60%', '80%', '100%']
-                    }
-                  }"
-                  :barOptions="{
-                    spaceRatio: 0.5,
-                    stacked: 0,
-                    height: 20,
-                    depth: 2
-                  }"
-                  :lineOptions="{
-                    dotSize: 4,
-                    hideLine: 0,
-                    hideDots: 0,
-                    heatline: 0,
-                    regionFill: 0,
-                    areaFill: 0
-                  }"
-                  height="300"
-                />
-                <div v-else class="text-center text-gray-500 py-8">
-                  No evaluation data available
+                <div 
+                  ref="chartContainer" 
+                  class="w-full transition-all duration-300"
+                >
+                  <v-frappe-chart
+                    v-if="hasData"
+                    type="bar"
+                    :labels="chartData.labels"
+                    :data="[
+                      {
+                        name: 'Homework',
+                        values: [chartData.values[0], 0, 0, 0],
+                        chartType: 'bar'
+                      },
+                      {
+                        name: 'Participation',
+                        values: [0, chartData.values[1], 0, 0],
+                        chartType: 'bar'
+                      },
+                      {
+                        name: 'Test Scores',
+                        values: [0, 0, chartData.values[2], 0],
+                        chartType: 'bar'
+                      },
+                      {
+                        name: 'Proficiency',
+                        values: [0, 0, 0, chartData.values[3]],
+                        chartType: 'bar'
+                      }
+                    ]"
+                    :colors="['#4F46E5', '#EC4899', '#06B6D4', '#F59E0B']"
+                    :tooltipOptions="{
+                      formatTooltipX: d => evaluation.data.labels[chartData.labels.indexOf(d)],
+                      formatTooltipY: d => `${(d * 100).toFixed(1)}%`,
+                      valuesOverPoints: true,
+                      showTooltipTitle: true,
+                      showAllTooltips: true
+                    }"
+                    :axisOptions="{
+                      xAxisMode: 'tick',
+                      yAxisMode: 'tick',
+                      xIsSeries: true,
+                      rotateXLabels: 0,
+                      xAxisHeight: 40,
+                      shortenYAxisNumbers: 1,
+                      centerLine: 0,
+                      xAxisLabelDistance: -15,
+                      labelAlignDist: 0,
+                      formatXAxisLabel: (label, i) => chartData.labels[i],
+                      yMarkers: [{ 
+                        label: 'Target',
+                        value: 0.75,
+                        type: 'solid',
+                        options: { labelPos: 'right' }
+                      }],
+                      yRegions: [{
+                        label: 'Good',
+                        start: 0.7,
+                        end: 1,
+                        options: { labelPos: 'right' }
+                      }],
+                      yAxis: {
+                        min: 0,
+                        max: 1,
+                        stepSize: 0.2,
+                        labels: ['0%', '20%', '40%', '60%', '80%', '100%']
+                      }
+                    }"
+                    :barOptions="{
+                      spaceRatio: 0.05,
+                      height: 40,
+                      depth: 3,
+                      borderRadius: 4,
+                      stacked: 0,
+                      minWidth: 60,
+                      maxWidth: 100,
+                      width: 80
+                    }"
+                    :chartOptions="{
+                      responsiveView: true,
+                      maxSlices: 8,
+                      minWidth: chartDimensions.width * 0.95,
+                      isNavigable: true,
+                      animate: 1,
+                      valuesOverPoints: 1,
+                      showLegend: 1,
+                      showTooltip: 1,
+                      regionFill: 1,
+                      barSpacing: 20
+                    }"
+                    class="w-full p-4 hover:shadow-lg transition-all duration-300"
+                    :height="chartDimensions.height"
+                  />
+                  <div v-else class="text-center text-gray-500 py-8">
+                    No evaluation data available
+                  </div>
+                </div>
+  
+                <!-- Legend (only show if hasData) -->
+                <div v-if="hasData" class="mt-4 flex flex-wrap gap-4 justify-center text-sm">
+                  <div v-for="(label, index) in evaluation.data?.labels" 
+                       :key="label"
+                       class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full"
+                         :style="{ backgroundColor: ['#4F46E5', '#EC4899', '#06B6D4', '#F59E0B'][index] }">
+                    </div>
+                    <span class="text-gray-600">
+                      {{ chartData.labels[index] }} - {{ label }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -313,15 +373,17 @@
                     </div>
   
                     <!-- Achievements Section -->
-                    <div v-if="evaluation.data?.evaluations[0]?.achievements" 
-                         class="md:col-span-3 p-4 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50">
-                      <div class="flex items-center mb-2">
-                        <Trophy class="w-4 h-4 text-amber-500 mr-2"/>
-                        <span class="text-sm font-medium text-gray-700">Achievements & Notes</span>
+                    <div v-if="evaluation.data?.evaluations.length > 0" 
+                         class="md:col-span-3 p-4 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 shadow-sm">
+                      <div class="flex items-center mb-4">
+                        <Trophy class="w-5 h-5 text-amber-500 mr-3"/>
+                        <span class="text-base font-semibold text-gray-800">Achievements & Notes</span>
                       </div>
-                      <p class="text-sm text-gray-600">
-                        {{ evaluation.data.evaluations[0].achievements }}
-                      </p>
+                      <div v-for="evaluation in evaluation.data.evaluations" :key="evaluation.name" class="mb-2">
+                        <p class="text-base text-gray-700">
+                          {{ evaluation.achievements }}
+                        </p>
+                      </div>
                     </div>
   
                     <!-- Behavioral Heatmap -->
@@ -476,7 +538,7 @@
   </template>
   
   <script setup>
-  import { computed, onMounted, ref, watch } from 'vue'
+  import { computed, onMounted, ref, watch, onUnmounted, nextTick } from 'vue'
   import { evaluationStore } from '@/stores/evaluation'
   import { studentStore } from '@/stores/student'
   import { Card } from 'frappe-ui'
@@ -795,6 +857,85 @@
     if (monthlyCount === 3) return 'bg-red-400'
     return 'bg-red-500'
   }
+  
+  // Add this computed property before the template
+  const chartData = computed(() => {
+    if (!evaluation.data?.labels) return null;
+    
+    // Define label mappings (abbreviation -> full name)
+    const labelMappings = {
+      'HW': 'Homework',
+      'Part': 'Participation',
+      'Test': 'Test Scores',
+      'Prof': 'Proficiency'
+    };
+
+    // Create abbreviated labels
+    const abbreviatedLabels = evaluation.data.labels.map(label => {
+      // Find matching abbreviation or use first 3 chars + '.'
+      const abbr = Object.entries(labelMappings).find(([_, full]) => full === label)?.[0] 
+        || `${label.slice(0, 3)}.`;
+      return abbr;
+    });
+
+    return {
+      labels: abbreviatedLabels,
+      values: evaluation.data.values,
+      mappings: labelMappings
+    };
+  });
+  
+  // Add a ref for chart dimensions
+  const chartContainer = ref(null)
+  const chartDimensions = ref({
+    width: 0,
+    height: 350
+  })
+  
+  // Add resize observer
+  const updateChartDimensions = () => {
+    if (chartContainer.value) {
+      const { width } = chartContainer.value.getBoundingClientRect()
+      chartDimensions.value = {
+        width,
+        height: 350
+      }
+      // Force chart update
+      nextTick(() => {
+        if (window.$frappe) window.$frappe.charts.update()
+      })
+    }
+  }
+  
+  // Setup resize observer
+  let resizeObserver
+  onMounted(() => {
+    resizeObserver = new ResizeObserver(debounce(updateChartDimensions, 100))
+    if (chartContainer.value) {
+      resizeObserver.observe(chartContainer.value)
+      resizeObserver.observe(document.body) // Watch for layout changes
+    }
+    updateChartDimensions()
+  })
+  
+  onUnmounted(() => {
+    if (resizeObserver) {
+      resizeObserver.disconnect()
+    }
+  })
+  
+  // Watch for layout changes with immediate effect
+  watch(
+    [
+      () => isSidebarCollapsed,
+      () => showAnalysis,
+      () => chartContainer.value?.offsetWidth
+    ],
+    () => {
+      updateChartDimensions()
+    },
+    { immediate: true, deep: true }
+  )
   </script>
   
   <style scoped>
@@ -897,6 +1038,34 @@
   .sacred-glow:hover::after {
     opacity: 1;
   }
+  
+  .v-frappe-chart {
+    background: linear-gradient(to bottom, rgba(249, 250, 251, 0.5), white);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .v-frappe-chart .bar {
+    transition: all 0.3s ease;
+  }
+  
+  .v-frappe-chart .bar:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+  }
+  
+  /* Add smooth transitions for chart resizing */
+  .v-frappe-chart {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .v-frappe-chart svg {
+    transition: all 0.3s ease-in-out;
+  }
   </style> 
   
   
+
+</``rewritten_file
+```
+</>`rewritten_file>

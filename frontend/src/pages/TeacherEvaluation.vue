@@ -2,14 +2,14 @@
   <div class="p-8 max-w-4xl lg:max-w-6xl mx-auto bg-white shadow-lg rounded-lg">
     <h1 class="text-4xl font-bold mb-10 text-center text-gray-800">Teacher Evaluation</h1>
     
-    <CustomAlert v-if="showAlert" :message="alertMessage" />
+    <CustomAlert v-if="showAlert" :message="alertMessage" :type="alertType" />
 
     <!-- Instructors Dropdown -->
     <div class="mb-12">
       <h2 class="text-2xl font-semibold text-gray-700 mb-6">Select an Instructor</h2>
       <select v-model="selectedInstructor" @change="updateInstructor" class="block w-full p-3 bg-gray-100 rounded-md shadow-sm border border-gray-200">
-        <option v-for="instructor in instructors" :key="instructor.name" :value="instructor">
-          {{ instructor.instructor_name }}
+        <option v-for="instructor in instructors" :key="instructor.instructor_name" :value="instructor" :disabled="instructor.reviewed">
+          {{ instructor.instructor_name }} {{ instructor.reviewed ? '(Already Reviewed)' : '' }}
         </option>
       </select>
     </div>
@@ -40,7 +40,11 @@
             <StarRating
               v-model="evaluation[field.key]"
               :max-stars="5"
+              :allow-half="true"
             />
+            <p v-if="field.description" class="mt-1 text-sm text-gray-500">
+              {{ field.description }}
+            </p>
           </div>
         </div>
         <div>
@@ -70,12 +74,36 @@ import { studentStore } from '@/stores/student'
 import CustomAlert from '@/components/CustomAlert.vue' // Import the custom alert
 
 const evaluationFields = [
-  { key: 'respect', label: 'Respect for Students' },
-  { key: 'exams', label: 'Exams' },
-  { key: 'communication_skill', label: 'Communication Skill' },
-  { key: 'followup', label: 'Student follow-up' },
-  { key: 'homework', label: 'Homework Load' },
-  { key: 'knowledge', label: 'Knowledge of Subject Matter' },
+  { 
+    key: 'respect', 
+    label: 'Respect for Students',
+    description: '1-Poor, 2-Fair, 3-Good, 4-Very Good, 5-Excellent'
+  },
+  { 
+    key: 'exams', 
+    label: 'Exams',
+    description: '1-Very Difficult, 2-Difficult, 3-Moderate, 4-Fair, 5-Well Balanced'
+  },
+  { 
+    key: 'communication_skill', 
+    label: 'Communication Skill',
+    description: '1-Poor, 2-Fair, 3-Good, 4-Very Good, 5-Excellent'
+  },
+  { 
+    key: 'followup', 
+    label: 'Student follow-up',
+    description: '1-Never, 2-Rarely, 3-Sometimes, 4-Often, 5-Always'
+  },
+  { 
+    key: 'homework', 
+    label: 'Homework Load',
+    description: '1-Too Little, 2-Light, 3-Balanced, 4-Heavy, 5-Too Much'
+  },
+  { 
+    key: 'knowledge', 
+    label: 'Knowledge of Subject Matter',
+    description: '1-Limited, 2-Basic, 3-Good, 4-Very Good, 5-Excellent'
+  },
 ]
 
 const evaluation = reactive({
@@ -83,9 +111,9 @@ const evaluation = reactive({
   instructors: '',
   review_date: new Date().toISOString().split('T')[0],
   respect: 0,
-  exams: 0.6,
+  exams: 0,
   communication_skill: 0,
-  followup: 0.7,
+  followup: 0,
   homework: 0,
   knowledge: 0,
   feedback: '',
@@ -96,9 +124,17 @@ const instructors = reactive([])
 const selectedInstructor = ref(null)
 const showAlert = ref(false)
 const alertMessage = ref('')
+const alertType = ref('success')
+const reviewedTeachers = ref([])
+const teacherReviews = ref({})
 
 const studentGroupResource = createResource({
   url: 'education.education.api.get_student_group_details',
+  method: 'GET',
+})
+
+const checkReviewResource = createResource({
+  url: 'education.education.api.get_existing_teacher_reviews',
   method: 'GET',
 })
 
@@ -111,15 +147,37 @@ async function fetchStudentGroupDetails() {
   try {
     const response = await studentGroupResource.fetch()
     evaluation.student_group = response.student_group_name
-    instructors.push(...response.instructors)
+    
+    const existingReviews = await checkReviewResource.fetch({
+      student: evaluation.reviewer
+    })
+    
+    reviewedTeachers.value = existingReviews.reviewed_teachers || []
+    teacherReviews.value = existingReviews.review_details || []
+    
+    instructors.push(...response.instructors.map(instructor => ({
+      ...instructor,
+      reviewed: reviewedTeachers.value.includes(instructor.instructor_name),
+      review_details: teacherReviews.value.find(r => r.instructors === instructor.instructor_name)
+    })))
+    
   } catch (error) {
     console.error('Error fetching student group details:', error)
+    alertMessage.value = 'Error loading instructors. Please try again.'
+    showAlert.value = true
   }
 }
 
 function updateInstructor() {
   if (selectedInstructor.value) {
-    evaluation.instructors = selectedInstructor.value.instructor_name;
+    if (selectedInstructor.value.reviewed) {
+      alertMessage.value = `You have already reviewed ${selectedInstructor.value.instructor_name} on ${selectedInstructor.value.review_details.review_date}`
+      alertType.value = 'warning'
+      showAlert.value = true
+      selectedInstructor.value = null
+      return
+    }
+    evaluation.instructors = selectedInstructor.value.instructor_name
   }
 }
 
@@ -131,30 +189,71 @@ onMounted(() => {
 
 async function submitEvaluation() {
   try {
-    console.log('Evaluation data before submission:', evaluation);
+    // Validate if instructor is selected
+    if (!selectedInstructor.value) {
+      alertMessage.value = 'Please select an instructor'
+      showAlert.value = true
+      return
+    }
+
+    // Double check if instructor has been reviewed
+    const existingReviews = await checkReviewResource.fetch({
+      student: evaluation.reviewer
+    })
+    
+    const isAlreadyReviewed = existingReviews.reviewed_teachers.includes(selectedInstructor.value.instructor_name)
+    
+    if (isAlreadyReviewed) {
+      alertMessage.value = 'You have already reviewed this instructor.'
+      showAlert.value = true
+      selectedInstructor.value = null
+      return
+    }
+
+    console.log('Evaluation data before submission:', evaluation)
 
     const response = await evaluationResource.fetch({
       data: JSON.stringify(evaluation),
-    });
+    })
 
-    console.log('Evaluation submitted:', response);
+    console.log('Evaluation submitted:', response)
     alertMessage.value = 'Evaluation submitted successfully!'
     showAlert.value = true
 
+    // Update local state to reflect the new review
+    const instructorIndex = instructors.findIndex(i => i.instructor_name === selectedInstructor.value.instructor_name)
+    if (instructorIndex !== -1) {
+      instructors[instructorIndex].reviewed = true
+      instructors[instructorIndex].review_details = {
+        review_date: evaluation.review_date
+      }
+    }
+
     // Reset form
-    selectedInstructor.value = null;
-    evaluation.instructors = '';
-    evaluation.review_date = new Date().toISOString().split('T')[0];
-    evaluation.respect = 0;
-    evaluation.exams = 0.6;
-    evaluation.communication_skill = 0;
-    evaluation.followup = 0.7;
-    evaluation.homework = 0;
-    evaluation.knowledge = 0;
-    evaluation.feedback = '';
+    selectedInstructor.value = null
+    evaluation.instructors = ''
+    evaluation.review_date = new Date().toISOString().split('T')[0]
+    evaluation.respect = 0
+    evaluation.exams = 0
+    evaluation.communication_skill = 0
+    evaluation.followup = 0
+    evaluation.homework = 0
+    evaluation.knowledge = 0
+    evaluation.feedback = ''
   } catch (error) {
-    console.error('Error submitting evaluation:', error);
-    alertMessage.value = 'Error submitting evaluation. Please try again.'
+    console.error('Error submitting evaluation:', error)
+    // Handle specific error messages from the backend
+    if (error.message?.includes('already submitted')) {
+      alertMessage.value = 'You have already reviewed this instructor.'
+      // Update local state to reflect the review status
+      const instructorIndex = instructors.findIndex(i => i.instructor_name === selectedInstructor.value.instructor_name)
+      if (instructorIndex !== -1) {
+        instructors[instructorIndex].reviewed = true
+      }
+      selectedInstructor.value = null
+    } else {
+      alertMessage.value = 'Error submitting evaluation. Please try again.'
+    }
     showAlert.value = true
   }
 }

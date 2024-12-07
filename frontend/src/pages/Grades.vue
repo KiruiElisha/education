@@ -14,15 +14,21 @@
     <div v-for="(courseData, course) in groupedAssessments" 
          :key="course" 
          class="bg-white shadow-lg rounded-lg p-6 mb-6">
-      <div class="flex justify-between items-center mb-4">
+      <div @click="toggleCourse(course)" 
+           class="flex justify-between items-center mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded">
         <h3 class="text-xl font-semibold text-gray-800">{{ course }}</h3>
-        <div class="text-lg">
+        <div class="flex items-center gap-3 text-lg">
           Course Average: 
           <span class="font-semibold">{{ calculateCourseAverage(courseData) }}%</span>
+          <FeatherIcon 
+            :name="expandedCourses[course] ? 'chevron-up' : 'chevron-down'"
+            class="h-5 w-5 text-gray-500"
+          />
         </div>
       </div>
       
-      <div class="overflow-x-auto">
+      <div v-show="expandedCourses[course]" 
+           class="overflow-x-auto transition-all duration-300 ease-in-out">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-100">
             <tr>
@@ -81,6 +87,12 @@ import { ref, computed } from 'vue'
 import { studentStore } from '@/stores/student'
 import MissingData from '@/components/MissingData.vue'
 
+const expandedCourses = ref({})
+
+const toggleCourse = (course) => {
+  expandedCourses.value[course] = !expandedCourses.value[course]
+}
+
 const { getCurrentProgram, getStudentInfo } = studentStore()
 
 let studentInfo = getStudentInfo().value
@@ -100,6 +112,12 @@ const grades = createResource({
   onSuccess: (response) => {
     console.log('Assessment results:', response);
     processGradesData(response);
+    // Initialize all courses as expanded
+    response.forEach(result => {
+      if (result.course && !expandedCourses.value.hasOwnProperty(result.course)) {
+        expandedCourses.value[result.course] = true
+      }
+    })
   },
   onError: (error) => {
     console.error('Error fetching assessment results:', error);
@@ -214,5 +232,15 @@ const getGradeColor = (grade) => {
 
 .overflow-x-auto {
   overflow-x: auto;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

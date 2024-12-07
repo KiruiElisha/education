@@ -959,31 +959,104 @@ def submit_teacher_evaluation(data=None):
 
         # Parse the incoming data
         evaluation_data = frappe.parse_json(data)
+        
+        # Get current user if reviewer is not provided
+        reviewer = evaluation_data.get("reviewer") or frappe.session.user
+        instructor = evaluation_data.get("instructors")
+
+        if not instructor:
+            frappe.throw(_("No instructor selected"))
+        
+        # Validate rating fields are between 0 and 1
+        rating_fields = ['respect', 'exams', 'communication_skill', 'followup', 'homework', 'knowledge']
+        for field in rating_fields:
+            value = evaluation_data.get(field, 0)
+            if not isinstance(value, (int, float)):
+                frappe.throw(_(f"{field.replace('_', ' ').title()} must be a number"))
+            if value < 0 or value > 1:
+                frappe.throw(_(f"{field.replace('_', ' ').title()} rating must be between 0 and 1"))
+        
+        # Check for existing review with better error handling
+        existing_review = frappe.db.exists("Teacher Evaluation", {
+            "reviewer": reviewer,
+            "instructors": instructor
+        })
+        
+        if existing_review:
+            review_date = frappe.db.get_value("Teacher Evaluation", existing_review, "review_date")
+            frappe.throw(_("You have already submitted an evaluation for this instructor on {0}").format(
+                frappe.format(review_date, {'fieldtype': 'Date'})
+            ))
 
         # Create a new Teacher Evaluation document
         evaluation = frappe.get_doc({
             "doctype": "Teacher Evaluation",
             "student_group": evaluation_data.get("student_group"),
-            "instructors": evaluation_data.get("instructors"),
-            "review_date": evaluation_data.get("review_date"),
-            "respect": evaluation_data.get("respect"),
-            "exams": evaluation_data.get("exams"),
-            "communication_skill": evaluation_data.get("communication_skill"),
-            "followup": evaluation_data.get("followup"),
-            "homework": evaluation_data.get("homework"),
-            "knowledge": evaluation_data.get("knowledge"),
-			"feedback": evaluation_data.get("feedback"),
-			"reviewer": evaluation_data.get("reviewer")
+            "instructors": instructor,
+            "review_date": evaluation_data.get("review_date") or frappe.utils.today(),
+            "respect": float(evaluation_data.get("respect", 0)),
+            "exams": float(evaluation_data.get("exams", 0)),
+            "communication_skill": float(evaluation_data.get("communication_skill", 0)),
+            "followup": float(evaluation_data.get("followup", 0)),
+            "homework": float(evaluation_data.get("homework", 0)),
+            "knowledge": float(evaluation_data.get("knowledge", 0)),
+            "feedback": evaluation_data.get("feedback", ""),
+            "reviewer": reviewer
         })
 
-        # Save the document
-        evaluation.insert()
-        frappe.db.commit()
+        # Insert and save with proper error handling
+        try:
+            evaluation.insert(ignore_permissions=True)
+            evaluation.save(ignore_permissions=True)
+            frappe.db.commit()
+        except Exception as e:
+            frappe.db.rollback()
+            frappe.log_error(f"Failed to save evaluation: {str(e)}")
+            frappe.throw(_("Failed to save evaluation. Please try again."))
 
-        return {"message": _("Evaluation submitted successfully.")}
+        return {
+            "message": _("Evaluation submitted successfully."),
+            "evaluation": {
+                "name": evaluation.name,
+                "review_date": evaluation.review_date,
+                "instructor": evaluation.instructors
+            }
+        }
 
+    except frappe.ValidationError as e:
+        # Pass validation errors directly to frontend
+        raise e
     except Exception as e:
         frappe.log_error(f"Error submitting evaluation: {str(e)}")
-        frappe.throw(_("There was an error submitting the evaluation."))
+        frappe.throw(_("An unexpected error occurred. Please try again."))
+
+@frappe.whitelist()
+def get_existing_teacher_reviews(student=None):
+    """Returns a list of teachers already reviewed by the student."""
+    try:
+        if not student:
+            student = frappe.session.user
+
+        reviews = frappe.get_all(
+            "Teacher Evaluation",
+            filters={"reviewer": student},
+            fields=["instructors", "name", "review_date", "respect", "exams", 
+                   "communication_skill", "followup", "homework", "knowledge", "feedback"],
+            order_by="review_date desc"
+        )
+        
+        # Format dates for frontend
+        for review in reviews:
+            review.review_date = frappe.format(review.review_date, {'fieldtype': 'Date'})
+        
+        return {
+            "reviewed_teachers": [r.instructors for r in reviews],
+            "review_details": reviews,
+            "total_reviews": len(reviews)
+        }
+
+    except Exception as e:
+        frappe.log_error(f"Error fetching teacher reviews: {str(e)}")
+        frappe.throw(_("Failed to fetch existing reviews"))
 
 
