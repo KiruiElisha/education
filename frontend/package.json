@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/assets/education/frontend/ && yarn copy-html-entry",
+    "build": "vite build --base=/assets/education/frontend/ && yarn copy-assets",
     "preview": "vite preview",
-    "copy-html-entry": "cp ../education/public/frontend/index.html ../education/www/student-portal.html"
+    "copy-assets": "cp -r public/pwa-icons public/screenshots ../education/public/frontend/ && cp ../education/public/frontend/index.html ../education/www/student-portal.html",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@vitejs/plugin-vue": "^2.0.0",
@@ -32,6 +33,8 @@
     "@vitejs/plugin-vue": "^2.0.0",
     "autoprefixer": "^10.4.2",
     "postcss": "^8.4.5",
-    "vite": "^2.7.2"
+    "sharp": "^0.33.5",
+    "vite": "^2.7.2",
+    "vite-plugin-pwa": "^0.11.13"
   }
 }
