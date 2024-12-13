@@ -11,13 +11,11 @@
     </div>
   </div>
   <Toasts />
-  <PWAInstall />
 </template>
 
 <script setup>
 import Sidebar from '@/components/Sidebar.vue'
 import Navbar from '@/components/Navbar.vue'
-import PWAInstall from '@/components/PWAInstall.vue'
 import { RouterView } from 'vue-router'
 import { Toasts } from 'frappe-ui'
 </script>

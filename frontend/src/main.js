@@ -17,40 +17,6 @@ import {
 
 import { VFrappeChart } from 'vue-frappe-chart'
 
-// Register service worker with periodic sync
-if ('serviceWorker' in navigator && 'periodicSync' in navigator.serviceWorker) {
-  window.addEventListener('load', async () => {
-    try {
-      const registration = await navigator.serviceWorker.register(
-        '/assets/education/frontend/sw.js',
-        { scope: '/student-portal/' }
-      )
-
-      // Request periodic sync permission
-      const status = await navigator.permissions.query({
-        name: 'periodic-background-sync',
-      })
-
-      if (status.state === 'granted') {
-        try {
-          await registration.periodicSync.register('sync-data', {
-            minInterval: 24 * 60 * 60 * 1000, // 24 hours
-          })
-        } catch (error) {
-          console.error('Periodic sync registration failed:', error)
-        }
-      }
-
-      // Request notification permission
-      if ('Notification' in window) {
-        Notification.requestPermission()
-      }
-    } catch (error) {
-      console.error('Service worker registration failed:', error)
-    }
-  })
-}
-
 // create a pinia instance
 let pinia = createPinia()
 
