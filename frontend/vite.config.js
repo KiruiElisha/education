@@ -11,31 +11,52 @@ export default defineConfig({
       mode: 'production',
       base: '/assets/education/frontend/',
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+      includeAssets: ['favicon.png', 'pwa-icons/*', 'screenshots/*'],
       manifest: {
         name: 'Frappe Education',
         short_name: 'Education',
         description: 'Student Portal for Frappe Education',
         theme_color: '#4F46E5',
-        start_url: '/student-portal',
+        start_url: '/student-portal/',
+        scope: '/student-portal/',
+        id: 'student-portal',
         display: 'standalone',
         background_color: '#ffffff',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: '/assets/education/frontend/pwa-icons/icon-144x144.png',
+            sizes: '144x144',
+            type: 'image/png'
+          },
+          {
+            src: '/assets/education/frontend/pwa-icons/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/assets/education/frontend/pwa-icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/assets/education/frontend/pwa-icons/maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'maskable'
+          }
+        ],
+        screenshots: [
+          {
+            src: '/assets/education/frontend/screenshots/mobile.png',
+            sizes: '390x844',
+            type: 'image/png',
+            form_factor: 'narrow'
+          },
+          {
+            src: '/assets/education/frontend/screenshots/desktop.png',
+            sizes: '1920x1080',
+            type: 'image/png',
+            form_factor: 'wide'
           }
         ]
       },

@@ -4,10 +4,20 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
     const url = new URL(event.request.url)
     
-    // If trying to access /app or /home, redirect to student portal
-    if (url.pathname.startsWith('/app') || url.pathname.startsWith('/home')) {
+    // Handle login-related redirects
+    if (url.pathname === '/login' || url.pathname === '/app' || url.pathname === '/home') {
       event.respondWith(
-        Response.redirect('/student-portal', 302)
+        fetch(event.request)
+          .then(response => {
+            // If response is a redirect or successful login
+            if (response.redirected || response.ok) {
+              return Response.redirect('/student-portal', 302)
+            }
+            return response
+          })
+          .catch(() => {
+            return Response.redirect('/student-portal', 302)
+          })
       )
       return
     }
@@ -23,29 +33,24 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      // Take control of all clients
       clients.claim(),
-      // Clear old caches if any
       caches.keys().then((cacheNames) => {
         return Promise.all(
-          cacheNames.map((cacheName) => {
-            return caches.delete(cacheName)
-          })
+          cacheNames.map((cacheName) => caches.delete(cacheName))
         )
       })
     ])
   )
 })
 
-// Handle offline fallback
-self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => {
-          // If offline and trying to navigate, redirect to student portal
-          return Response.redirect('/student-portal', 302)
-        })
-    )
+// Handle messages from the client
+self.addEventListener('message', (event) => {
+  if (event.data === 'login_successful') {
+    // Notify all clients to redirect
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.navigate('/student-portal')
+      })
+    })
   }
 }) 

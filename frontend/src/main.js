@@ -26,6 +26,11 @@ if ('serviceWorker' in navigator) {
       })
       .then(registration => {
         console.log('SW registered:', registration)
+        
+        // Listen for successful login
+        window.addEventListener('frappe-login-success', () => {
+          registration.active?.postMessage('login_successful')
+        })
       })
       .catch(error => {
         console.log('SW registration failed:', error)
