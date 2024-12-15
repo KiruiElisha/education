@@ -24,22 +24,22 @@ export default defineConfig({
         background_color: '#ffffff',
         icons: [
           {
-            src: '/assets/education/frontend/pwa-icons/icon-144x144.png',
+            src: './pwa-icons/icon-144x144.png',
             sizes: '144x144',
             type: 'image/png'
           },
           {
-            src: '/assets/education/frontend/pwa-icons/icon-192x192.png',
+            src: './pwa-icons/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/assets/education/frontend/pwa-icons/icon-512x512.png',
+            src: './pwa-icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: '/assets/education/frontend/pwa-icons/maskable-512x512.png',
+            src: './pwa-icons/maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
@@ -47,13 +47,13 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: '/assets/education/frontend/screenshots/mobile.png',
+            src: './screenshots/mobile.png',
             sizes: '390x844',
             type: 'image/png',
             form_factor: 'narrow'
           },
           {
-            src: '/assets/education/frontend/screenshots/desktop.png',
+            src: './screenshots/desktop.png',
             sizes: '1920x1080',
             type: 'image/png',
             form_factor: 'wide'
