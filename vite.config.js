@@ -8,14 +8,34 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
         name: 'Education App',
         short_name: 'EduApp',
+        description: 'A modern education management application',
         theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
         icons: [
-          // Add your icons configuration here
+          {
+            src: '/icons/pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/icons/pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: '/icons/maskable-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
         ],
+        start_url: '/',
+        scope: '/'
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,vue}'],
@@ -27,7 +47,7 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -43,7 +63,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     }
   },
-  base: '/', // This is important for proper path resolution
+  base: '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

@@ -86,6 +86,10 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'es2015',
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        sw: path.resolve(__dirname, 'src/sw.js')
+      },
       output: {
         manualChunks: {
           'frappe-ui': ['frappe-ui']
