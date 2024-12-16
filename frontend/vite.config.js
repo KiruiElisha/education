@@ -17,29 +17,32 @@ export default defineConfig({
         short_name: 'Education',
         description: 'Student Portal for Frappe Education',
         theme_color: '#4F46E5',
-        start_url: '/student-portal/',
-        scope: '/student-portal/',
+        start_url: '/assets/education/frontend/',
+        scope: '/assets/education/frontend/',
         id: 'student-portal',
         display: 'standalone',
         background_color: '#ffffff',
         icons: [
           {
-            src: './pwa-icons/icon-144x144.png',
+            src: '/assets/education/frontend/pwa-icons/icon-144x144.png',
             sizes: '144x144',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            src: './pwa-icons/icon-192x192.png',
+            src: '/assets/education/frontend/pwa-icons/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            src: './pwa-icons/icon-512x512.png',
+            src: '/assets/education/frontend/pwa-icons/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            src: './pwa-icons/maskable-512x512.png',
+            src: '/assets/education/frontend/pwa-icons/maskable-icon.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
@@ -47,13 +50,13 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: './screenshots/mobile.png',
+            src: '/assets/education/frontend/screenshots/mobile.png',
             sizes: '390x844',
             type: 'image/png',
             form_factor: 'narrow'
           },
           {
-            src: './screenshots/desktop.png',
+            src: '/assets/education/frontend/screenshots/desktop.png',
             sizes: '1920x1080',
             type: 'image/png',
             form_factor: 'wide'
